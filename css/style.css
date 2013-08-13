@@ -1,4 +1,3 @@
-
   * {
     font-family: Verdana, Arial, sans-serif;
   }
@@ -75,4 +74,10 @@
     border: 0;
     background-color:transparent;
     padding: 0;
+  }
+  .sidebyside {
+    display:none;
+  }
+  #results {
+    display: none;
   }

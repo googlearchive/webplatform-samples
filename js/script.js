@@ -1,4 +1,3 @@
-
 var langs =
 [['Afrikaans',       ['af-ZA']],
  ['Bahasa Indonesia',['id-ID']],
@@ -124,6 +123,8 @@ if (!('webkitSpeechRecognition' in window)) {
 
   recognition.onend = function() {
     recognizing = false;
+
+    console.dir(words);
     if (ignore_onend) {
       return;
     }
@@ -150,6 +151,8 @@ if (!('webkitSpeechRecognition' in window)) {
     for (var i = event.resultIndex; i < event.results.length; ++i) {
       if (event.results[i].isFinal) {
         final_transcript += event.results[i][0].transcript;
+        addToWords(event.results[i][0].transcript);
+        console.log("onresult fired with: ", event.results[i][0].transcript, "\nFinal Transcript");
       } else {
         interim_transcript += event.results[i][0].transcript;
       }
@@ -215,8 +218,11 @@ function emailButton() {
 function startButton(event) {
   if (recognizing) {
     recognition.stop();
+    limit = 10;
+    count = 0;
     return;
   }
+  $('#googleResults').empty();
   final_transcript = '';
   recognition.lang = select_dialect.value;
   recognition.start();
@@ -252,4 +258,40 @@ function showButtons(style) {
   email_button.style.display = style;
   copy_info.style.display = 'none';
   email_info.style.display = 'none';
+}
+
+var words = [];
+var limit = 10;
+var count = 0;
+function addToWords(text){
+
+  /*
+  Docs:
+  https://developers.google.com/custom-search/v1/cse/list
+  */
+
+  var cse_id = '001220382902230415541:wiiftddmvwe';
+  var api_key = 'AIzaSyBy1m2sqfw-VliEOG9Wf9-JTG8g69ULN1I';
+  var url = "https://www.googleapis.com/customsearch/v1?key=" + api_key + "&cx=" + cse_id + "&q=" + text + "&searchType=image&fileType=jpg&imgSize=medium&alt=json";
+  if(count < limit){
+    count++;
+    $.get(url, function(data) {
+      var imgSrc = data['items'][0]['link'];
+      var image = document.createElement("img");
+      $(image).hide();
+      $(image).attr({'src':imgSrc});
+      if(count % 5 == 0){
+        $(image).css({'height':'200px',
+                    'margin':'10px',
+                    'float':'left',
+                    'clear':'both'});
+      } else {
+      $(image).css({'height':'200px',
+                    'margin':'10px',
+                    'float':'left'});
+      }
+      $('#googleResults').append(image);
+      $(image).fadeIn(2000);
+    });
+  }
 }
