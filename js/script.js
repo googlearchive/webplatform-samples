@@ -270,6 +270,7 @@ function showButtons(style) {
 var words = [];
 var limit = 10;
 var count = 0;
+
 function addToWords(text){
 
   /*
@@ -277,11 +278,11 @@ function addToWords(text){
   https://developers.google.com/custom-search/v1/cse/list
   */
 
-  var cse_id = '001220382902230415541:wiiftddmvwe';
-  var api_key = 'AIzaSyBy1m2sqfw-VliEOG9Wf9-JTG8g69ULN1I';
+  var cse_id = 'YOUR-SEARCH-ENGINE-ID-HERE';
+  var api_key = 'YOUR-API-KEY-HERE';
   var url = "https://www.googleapis.com/customsearch/v1?key=" + api_key + "&cx=" + cse_id + "&q=" + text + "&searchType=image&fileType=jpg&imgSize=medium&alt=json";
+  
   if(count < limit){
-    count++;
     $.get(url, function(data) {
       var imgSrc = data['items'][0]['link'];
       var image = document.createElement("img");
@@ -304,5 +305,6 @@ function addToWords(text){
       $('#googleResults').append(image);
       $(image).fadeIn(2000);
     });
+    count++;
   }
 }
