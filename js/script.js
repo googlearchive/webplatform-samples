@@ -277,11 +277,14 @@ function addToWords(text){
   Docs:
   https://developers.google.com/custom-search/v1/cse/list
   */
-
-  var cse_id = 'YOUR-SEARCH-ENGINE-ID-HERE';
-  var api_key = 'YOUR-API-KEY-HERE';
+  var cse_id = 'CSE_ID';
+  var api_key = 'API_KEY';
   var url = "https://www.googleapis.com/customsearch/v1?key=" + api_key + "&cx=" + cse_id + "&q=" + text + "&searchType=image&fileType=jpg&imgSize=medium&alt=json";
   
+  if(window.config){
+    var url = "https://www.googleapis.com/customsearch/v1?key=" + window.config.api_key + "&cx=" + window.config.cse_id + "&q=" + text + "&searchType=image&fileType=jpg&imgSize=medium&alt=json";
+  }
+
   if(count < limit){
     $.get(url, function(data) {
       var imgSrc = data['items'][0]['link'];
