@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>Web Speech API Demo</title>
+  </head>
+  <body>
+    <script>
+      
+      /*
+      Documentation:
+      https://dvcs.w3.org/hg/speech-api/raw-file/9a0075d25326/speechapi.html
+      */
+
+      var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+      if(!SpeechRecognition){
+        alert('Only supported in Google Chrome 26+');
+      }
+
+      var recognition = new SpeechRecognition();
+      recognition.lang = 'nl-NL';
+      recognition.interimResults = false; //default false
+      recognition.continuous = true;  //default false
+      recognition.maxAlternatives = 1; //default 1
+      //add custom properties
+      recognition.transcript = [];
+      recognition.useTimeout = true; //enable stop after x seconds of receiving no results
+      recognition.counterTime, recognition.counterMaxTime = 60; //time to countdown in seconds
+      recognition.confidenceTreshold = 0.25; //treshold for result selection
+      recognition.timer;
+
+      recognition.countDown = function() {
+        this.counterTime == 0 ? this.stop() : this.counterTime--;
+      };
+
+      recognition.counterReset = function() {
+        clearTimeout(this.timer);
+        this.counterTime = this.counterMaxTime;
+      };
+      
+      recognition.addToTranscript = function(sentence) {
+        this.transcript.push(sentence);
+      };
+
+      recognition.onstart = function(event) {
+        console.log('onstart', event);
+      };
+      
+      recognition.onend = function(event) {
+        console.log('onened', event);
+        console.log(this.transcript.toString());
+      };
+
+      recognition.onaudiostart = function(event) {
+        console.log('onaudiostart', event);
+      };
+      
+      recognition.onaudioend = function(event) {
+        console.log('onaudioend', event);
+      };
+
+      recognition.onsoundstart = function(event) {
+        console.log('onsoundstart', event);
+        if(this.useTimeout){
+          this.timer = setTimeout(this.countDown(), 1000);
+        }
+      };
+      
+      recognition.onsoundend = function(event) {
+        console.log('onsoundend', event);
+      };
+
+      recognition.onspeechstart = function(event) {
+        console.log('onspeechstart', event);
+      };
+
+      recognition.onspeechend = function(event) {
+        console.log('onspeechend', event);
+      };
+      
+      recognition.onresult = function(event) {
+        console.log('onresult', event);
+        var result = event.results[event.resultIndex];
+        if(result[0].confidence >= this.confidenceTreshold){
+          this.addToTranscript(result[0].transcript);  
+        }
+        if(this.useTimeout){
+          this.counterReset();
+          this.countDown();
+        }
+      };
+
+      recognition.onnomatch = function(event) {
+        console.log('onnomatch', event);
+      };
+
+      recognition.onerror = function(event) {
+        console.warn('onerror', event.error, event.message);
+      };
+
+      window.onload = recognition.start();
+
+    </script>
+  </body>
+</html>
