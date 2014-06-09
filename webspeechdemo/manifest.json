@@ -1,0 +1,13 @@
+{
+  "manifest_version": 2,
+  "name": "WebSpeechAPI app",
+  "version": "1",
+  "permissions": ["audioCapture"],
+  "app": {
+    "background": {
+      "scripts": ["main.js"]
+    }
+  },
+  "minimum_chrome_version": "25"
+
+}
