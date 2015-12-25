@@ -79,6 +79,64 @@
     background-color:transparent;
     padding: 0;
   }
+  #final_span[contenteditable]:focus { outline: 0px solid transparent; }
+  
+  .onoffswitch {
+    position: relative; width: 90px;
+    -webkit-user-select:none; -moz-user-select:none; -ms-user-select: none;
+  }
+  .onoffswitch-checkbox {
+    display: none;
+  }
+  .onoffswitch-label {
+    display: block; overflow: hidden; cursor: pointer;
+    border: 2px solid #999999; border-radius: 20px;
+  }
+  .onoffswitch-inner {
+    display: block; width: 200%; margin-left: -100%;
+    transition: margin 0.3s ease-in 0s;
+  }
+  .onoffswitch-inner:before, .onoffswitch-inner:after {
+    display: block; float: left; width: 50%; height: 30px; padding: 0; line-height: 30px;
+    font-size: 14px; color: white; font-family: Trebuchet, Arial, sans-serif; font-weight: bold;
+    box-sizing: border-box;
+  }
+  .onoffswitch-inner:before {
+    content: "ON";
+    padding-left: 10px;
+    background-color: #34A7C1; color: #FFFFFF;
+  }
+  .onoffswitch-inner:after {
+    content: "OFF";
+    padding-right: 10px;
+    background-color: #EEEEEE; color: #999999;
+    text-align: right;
+  }
+  .onoffswitch-switch {
+    display: block; width: 18px; margin: 6px;
+    background: #FFFFFF;
+    position: absolute; top: 0; bottom: 0;
+    right: 56px;
+    border: 2px solid #999999; border-radius: 20px;
+    transition: all 0.3s ease-in 0s; 
+  }
+  .onoffswitch-checkbox:checked + .onoffswitch-label .onoffswitch-inner {
+    margin-left: 0;
+  }
+  .onoffswitch-checkbox:checked + .onoffswitch-label .onoffswitch-switch {
+    right: 0px; 
+  }  
+  #enable_synthesis {
+    display: inline-block;
+    margin: 16px auto;
+  }
+  #enable_synthesis #switch_container {
+    float: left;
+  }
+  #enable_synthesis h3 {
+    float: left;
+    margin: 5px 14px;
+  }
 </style>
 <h1 class="center" id="headline">
   <a href="http://dvcs.w3.org/hg/speech-api/raw-file/tip/speechapi.html">
@@ -106,9 +164,8 @@
     <img id="start_img" src="mic.gif" alt="Start"></button>
 </div>
 <div id="results">
-  <span id="final_span" class="final"></span>
+  <span id="final_span" class="final" contenteditable="true"></span>
   <span id="interim_span" class="interim"></span>
-  <p>
 </div>
 <div class="center">
   <div class="sidebyside" style="text-align:right">
@@ -131,6 +188,18 @@
     <select id="select_language" onchange="updateCountry()"></select>
     &nbsp;&nbsp;
     <select id="select_dialect"></select>
+  </div>
+  <div id="enable_synthesis">
+    <div id="switch_container">
+      <div class="onoffswitch">
+          <input type="checkbox" name="onoffswitch" class="onoffswitch-checkbox" id="myonoffswitch" onchange="updateSynthesis()" checked>
+          <label class="onoffswitch-label" for="myonoffswitch">
+              <span class="onoffswitch-inner"></span>
+              <span class="onoffswitch-switch"></span>
+          </label>
+      </div>
+    </div>
+    <h3>Enable speech synthesis feedback</h3>
   </div>
 </div>
 <script>
@@ -197,7 +266,6 @@ var langs =
                      ['yue-Hant-HK', '粵語 (香港)']],
  ['日本語',           ['ja-JP']],
  ['Lingua latīna',   ['la']]];
-
 for (var i = 0; i < langs.length; i++) {
   select_language.options[i] = new Option(langs[i][0], i);
 }
@@ -206,17 +274,31 @@ updateCountry();
 select_dialect.selectedIndex = 6;
 showInfo('info_start');
 
+function updateSynthesis(){
+  synthesis_enabled = myonoffswitch.checked;
+}
+
 function updateCountry() {
   for (var i = select_dialect.options.length - 1; i >= 0; i--) {
     select_dialect.remove(i);
   }
   var list = langs[select_language.selectedIndex];
-  for (var i = 1; i < list.length; i++) {
-    select_dialect.options.add(new Option(list[i][1], list[i][0]));
+  for (var j = 1; j < list.length; j++) {
+    select_dialect.options.add(new Option(list[j][1], list[j][0]));
   }
   select_dialect.style.visibility = list[1].length == 1 ? 'hidden' : 'visible';
+  if(recognizing){
+    ignore_onend = true;
+    recognition.stop();
+    setTimeout(function(){
+      recognition.lang = select_dialect.value;    
+      ignore_onend = false;
+      recognition.start();      
+    },500);
+  }
 }
-
+var speechReady = true;
+var synthesis_enabled = true;
 var create_email = false;
 var final_transcript = '';
 var recognizing = false;
@@ -226,16 +308,22 @@ if (!('webkitSpeechRecognition' in window)) {
   upgrade();
 } else {
   start_button.style.display = 'inline-block';
+  var msg = new SpeechSynthesisUtterance();
+  msg.onend = function(e) {
+    speechReady = true;
+    //console.log('Finished in ' + e.elapsedTime + ' seconds.');
+  };    
+  msg.onstart = function(e){
+    speechReady = false;
+  };
   var recognition = new webkitSpeechRecognition();
   recognition.continuous = true;
   recognition.interimResults = true;
-
   recognition.onstart = function() {
     recognizing = true;
     showInfo('info_speak_now');
     start_img.src = 'mic-animate.gif';
   };
-
   recognition.onerror = function(event) {
     if (event.error == 'no-speech') {
       start_img.src = 'mic.gif';
@@ -256,7 +344,6 @@ if (!('webkitSpeechRecognition' in window)) {
       ignore_onend = true;
     }
   };
-
   recognition.onend = function() {
     recognizing = false;
     if (ignore_onend) {
@@ -279,41 +366,43 @@ if (!('webkitSpeechRecognition' in window)) {
       createEmail();
     }
   };
-
   recognition.onresult = function(event) {
     var interim_transcript = '';
+    var new_final_transcript = '';
     for (var i = event.resultIndex; i < event.results.length; ++i) {
       if (event.results[i].isFinal) {
-        final_transcript += event.results[i][0].transcript;
+        new_final_transcript += event.results[i][0].transcript;
       } else {
         interim_transcript += event.results[i][0].transcript;
       }
     }
-    final_transcript = capitalize(final_transcript);
-    final_span.innerHTML = linebreak(final_transcript);
+    //console.log(new_final_transcript);
+    if(speechReady && new_final_transcript.length && synthesis_enabled){
+      msg.lang = select_dialect.value; 
+      msg.text = new_final_transcript;
+      window.speechSynthesis.speak(msg);            
+    }
+    final_transcript = capitalize(new_final_transcript);
+    final_span.innerHTML = final_span.innerHTML + linebreak(final_transcript);
     interim_span.innerHTML = linebreak(interim_transcript);
     if (final_transcript || interim_transcript) {
       showButtons('inline-block');
     }
   };
 }
-
 function upgrade() {
   start_button.style.visibility = 'hidden';
   showInfo('info_upgrade');
 }
-
 var two_line = /\n\n/g;
 var one_line = /\n/g;
 function linebreak(s) {
   return s.replace(two_line, '<p></p>').replace(one_line, '<br>');
 }
-
 var first_char = /\S/;
 function capitalize(s) {
   return s.replace(first_char, function(m) { return m.toUpperCase(); });
 }
-
 function createEmail() {
   var n = final_transcript.indexOf('\n');
   if (n < 0 || n >= 80) {
@@ -323,7 +412,6 @@ function createEmail() {
   var body = encodeURI(final_transcript.substring(n + 1));
   window.location.href = 'mailto:?subject=' + subject + '&body=' + body;
 }
-
 function copyButton() {
   if (recognizing) {
     recognizing = false;
@@ -333,7 +421,6 @@ function copyButton() {
   copy_info.style.display = 'inline-block';
   showInfo('');
 }
-
 function emailButton() {
   if (recognizing) {
     create_email = true;
@@ -346,7 +433,6 @@ function emailButton() {
   email_info.style.display = 'inline-block';
   showInfo('');
 }
-
 function startButton(event) {
   if (recognizing) {
     recognition.stop();
@@ -356,14 +442,13 @@ function startButton(event) {
   recognition.lang = select_dialect.value;
   recognition.start();
   ignore_onend = false;
-  final_span.innerHTML = '';
+  //final_span.innerHTML = '';
   interim_span.innerHTML = '';
   start_img.src = 'mic-slash.gif';
   showInfo('info_allow');
   showButtons('none');
   start_timestamp = event.timeStamp;
 }
-
 function showInfo(s) {
   if (s) {
     for (var child = info.firstChild; child; child = child.nextSibling) {
@@ -376,7 +461,6 @@ function showInfo(s) {
     info.style.visibility = 'hidden';
   }
 }
-
 var current_style;
 function showButtons(style) {
   if (style == current_style) {
